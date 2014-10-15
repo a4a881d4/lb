@@ -47,6 +47,7 @@ coverage.xml
 # Django stuff:
 *.log
 
+
 # Sphinx documentation
 docs/_build/
 
@@ -54,3 +55,6 @@ docs/_build/
 target/
 
 *.wav
+txt
+
+*.txt
