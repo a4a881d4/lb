@@ -6,16 +6,34 @@ class LBfile:
 		f = wave.open(fn,"rb")
 		params = f.getparams()  
 		nchannels, sampwidth, framerate, nframes = params[:4]
-		self.frame = f.readframes(nframes)
+		frame = f.readframes(nframes)
 		f.close()
 		self.z = []
 		for i in range(nframes):
-			c = struct.unpack_from('2h',self.frame,i*4)
+			c = struct.unpack_from('2h',frame,i*4)
 			self.z.append(complex(c[0],c[1]))
 		self.powers = []
 		for i in range(len(self.z)/256-1):
 			self.powers.append( self._power( self.z[i*256:(i+1)*256] ))
 		self.avgPower = sum(self.powers)/len(self.powers)
+		
+		self.frames = []
+		f = []
+		f1 = self.findFrame(0)
+		f.append(f1)
+		while 1:
+			f2 = self.checkFrame( f1+1820+455 )
+			if f2-f1>(1820*2):
+				self.frames.append(f)
+				f = [ f2 ]
+				print "find ",f2, "frame\n"
+				f1 = f2
+			elif f2==-1:
+				self.frames.append(f)
+				break
+			else:
+				f.append(f2)
+				f1 = f2
 			
 	def _power( self, d ):
 		p = 0
@@ -54,16 +72,23 @@ class LBfile:
 			x.append((a*a.conjugate()).real)
 		pos = x.index(max(x)) + pos256*256+pos16*16
 		return pos
-		
+	
+	def checkFrame( self, start ):
+		pos256 = (start+1820+455)/256+1
+		if pos256>=len(self.powers):
+			return -1
+		if self.powers[pos256]<self.avgPower/2.:
+			return self.findFrame(start)
+		start = start-5
+		x = []
+		for i in range( start,start+9 ):
+			a = self.xcorrZ(i)
+			x.append((a*a.conjugate()).real)
+		pos = x.index(max(x)) + start
+		return pos	
 		
 if __name__ == '__main__':
 
-	aLB = LBfile('e:\works\lb\left.wav')
-	f = []
-	f1 = aLB.findFrame(0)
-	f.append(f1)
-	for i in range(1,100):
-		f1 = aLB.findFrame( f1+1820 )
-		f.append( f1 )
-		
+	aLB = LBfile('d:\works\lb\left.wav')
+	
 	
