@@ -96,6 +96,5 @@ if __name__=='__main__':
 				x.append(j)
 				y.append(i)
 	plot(x,y,'.')
-	grid('on')
 	show()
 		

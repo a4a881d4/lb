@@ -131,7 +131,7 @@ class LBframe:
 	def plotMatch( self ):
 		for i in range(1,len(self.frames)):
 			pos = self.frames[i][0]
-			aX = self.xcorrShiftZ45( self.acc, pos )
+			aX = self.xcorrShiftZ15( self.acc, pos )
 			x = []
 			for a in aX:
 				x.append((a*a.conjugate()).real)
