@@ -123,7 +123,7 @@ class LBframe:
 			pos = self.frames[i][0]
 			posO, peak, a = self.findMatch(self.acc,pos)
 			print pos,"match:",posO," ",peak," ",a
-			self.matchPos.append((posO,self._normal(a)),peak)
+			self.matchPos.append((posO,self._normal(a),peak))
 			
 	def plotMatch( self ):
 		for i in range(1,len(self.frames)):
