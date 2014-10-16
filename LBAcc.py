@@ -63,7 +63,7 @@ class LBAcc:
 		show()
 if __name__=='__main__':
 	aAcc = LBAcc()
-	aAcc.fromFile('d:/works/lb/leftacc.txt')
+	aAcc.fromFile('e:/works/lb/leftacc.txt')
 	phase = aAcc.freqErr()
 	print phase
 	aAcc.removeFreq(0.-phase)

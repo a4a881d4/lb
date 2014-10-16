@@ -123,7 +123,7 @@ class LBframe:
 			pos = self.frames[i][0]
 			posO, peak, a = self.findMatch(self.acc,pos)
 			print pos,"match:",posO," ",peak," ",a
-			self.matchPos.append((posO,self._normal(a)))
+			self.matchPos.append((posO,self._normal(a)),peak)
 			
 	def plotMatch( self ):
 		for i in range(1,len(self.frames)):
@@ -139,9 +139,12 @@ class LBframe:
 		return x/math.sqrt((x*x.conjugate()).real)
 	
 	def _buildAcc( self ):
+		sum = 0.
+		for ( start,a,p ) in self.matchPos:
+			sum = sum + p
 		length = (1820+455)*94
 		self.acc = [ complex(0.,0.) for i in range(length) ]
-		for (start,a) in self.matchPos:
+		for (start,a,p) in self.matchPos:
 			for i in range(length):
-				self.acc[i] = self.acc[i] + self.z[start+i]*a
+				self.acc[i] = self.acc[i] + self.z[start+i]*a*math.sqrt(p/sum)
 				
