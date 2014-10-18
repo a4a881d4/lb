@@ -1,6 +1,5 @@
 import struct
 import math
-from matplotlib.pylab import *
 
 class LBframe:
 	def __init__(self,inF,length):
@@ -35,8 +34,8 @@ class LBframe:
 		for frame in self.frames:
 			if len(frame)!=94:
 				self.frames.remove( frame )
-		
-		self.acc = self.z[self.frames[0][0]:(self.frames[0][0]+94*(1820+455))]
+		self.frameLen = 1*(1820+455)		
+		self.acc = self.z[self.frames[0][0]:(self.frames[0][0]+self.frameLen)]
 		self.accp = self._mypower(self.acc)
 		self.fpowers = [ 0. for f in self.frames ]
 		self.framePower()
@@ -128,15 +127,6 @@ class LBframe:
 			print pos,"match:",posO," ",peak/(self.accp*self.fpowers[i])," ",a
 			self.matchPos.append((posO,self._normal(a),peak))
 			
-	def plotMatch( self ):
-		for i in range(1,len(self.frames)):
-			pos = self.frames[i][0]
-			aX = self.xcorrShiftZ45( self.acc, pos )
-			x = []
-			for a in aX:
-				x.append((a*a.conjugate()).real)
-			plot( x )
-			show()
 	
 	def _normal( self, x ):
 		return x/math.sqrt((x*x.conjugate()).real)
@@ -145,7 +135,7 @@ class LBframe:
 		sum = 0.
 		for ( start,a,p ) in self.matchPos:
 			sum = sum + p
-		length = (1820+455)*94
+		length = self.frameLen
 		self.acc = [ complex(0.,0.) for i in range(length) ]
 		for (start,a,p) in self.matchPos:
 			for i in range(length):
