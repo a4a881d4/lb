@@ -72,7 +72,7 @@ class LBAcc:
 		plot(aY)
 if __name__=='__main__':
 	aAcc = LBAcc()
-	aAcc.fromFile('./rightacc.txt')
+	aAcc.fromFile('g:/works/lb/rightacc.txt')
 	phase = aAcc.freqErr()
 	print phase
 	aAcc.removeFreq(0.-phase)
@@ -89,12 +89,15 @@ if __name__=='__main__':
 		for j in range(87):
 			sum = sum + aAcc.freqPowers[i][j]
 	sum = sum/1024./87.*3.
-	for i in range(1024):
-		for j in range(87):
-			#print aAcc.freqPowers[i][j]," ",i," ",j," ", aAcc.power
-			if aAcc.freqPowers[i][j] > sum:
-				x.append(j)
-				y.append(i)
+	with open('g:/works/lb/rightAccP.txt','wt') as fout:
+		for i in range(1024):
+			for j in range(87):
+				print >>fout, aAcc.freqPowers[i][j],
+				if aAcc.freqPowers[i][j] > sum:
+					x.append(j)
+					y.append(i)
+			print >>fout, "\n"
+		fout.close()
 	plot(x,y,'.')
 	grid('on')
 	show()
