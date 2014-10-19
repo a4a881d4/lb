@@ -2,8 +2,10 @@ import struct
 import math
 
 class LBframe:
-	def __init__(self,inF,length):
+	def __init__(self,inF,length,block,startBlock):
 		self.z = []
+		self.block = block
+		self.startBlock = startBlock
 		for i in range(length):
 			c = struct.unpack_from( '2h', inF, i*4 )
 			self.z.append(complex(c[0],c[1]))
@@ -32,16 +34,16 @@ class LBframe:
 				f1 = f2
 		
 		for frame in self.frames:
-			if len(frame)!=94:
+			if len(frame)<self.block+self.startBlock:
 				self.frames.remove( frame )
-		self.frameLen = 1*(1820+455)		
-		self.acc = self.z[self.frames[0][0]:(self.frames[0][0]+self.frameLen)]
+		self.frameLen = self.block*(1820+455)		
+		self.acc = self.z[self.frames[0][self.startBlock]:(self.frames[0][self.startBlock]+self.frameLen)]
 		self.accp = self._mypower(self.acc)
 		self.fpowers = [ 0. for f in self.frames ]
 		self.framePower()
 		self.matchPos = []
-		self.match()
-		self._buildAcc()
+		#self.match()
+		#self._buildAcc()
 		
 	def _power( self, d ):
 		p = 0
@@ -79,8 +81,14 @@ class LBframe:
 			x.append((a*a.conjugate()).real)
 		peak = max(x)
 		posMax = x.index(peak)
+		dat =0.
+		if (posMax>0) and (posMax<44):
+			a_1 = math.sqrt(x[posMax-1])
+			a_0 = math.sqrt(x[posMax])
+			a11 = math.sqrt(x[posMax+1])
+			dat = (a11-a_1)/(2.*a_0-a_1-a11)
 		pos = pos-22+posMax
-		return pos,peak,aX[posMax]
+		return pos,peak,aX[posMax],dat
 			
 	def findFrame( self, start ):
 		# find power
@@ -122,12 +130,31 @@ class LBframe:
 	def match( self ):
 		self.matchPos = []
 		for i in range(len(self.frames)):
-			pos = self.frames[i][0]
-			posO, peak, a = self.findMatch(self.acc,pos)
+			pos = self.frames[i][self.startBlock]
+			posO, peak, a, dat = self.findMatch(self.acc,pos)
 			print pos,"match:",posO," ",peak/(self.accp*self.fpowers[i])," ",a
 			self.matchPos.append((posO,self._normal(a),peak))
 			
-	
+	def _intp( self, pos, fact ):
+		posa = float(pos)+fact
+		pos = int(posa)
+		fact = posa-float(pos)
+		return (1.-fact)*self.z[pos]+fact*self.z[pos+1]
+		
+	def findMatchWithDat( self, A, pos ):
+		aX = []
+		for i in range(-9,10):
+			dat = float(i)/10.
+			B = [ self._intp(k,dat) for k in range(pos,pos+self.frameLen) ]
+			aX.append(self._xcorrAB(A,B))
+		x = []
+		for a in aX:
+			x.append((a*a.conjugate()).real)
+		peak = max(x)
+		posMax = x.index(peak)
+		pos = float(posMax-9)/10.
+		return pos,peak,aX[posMax]
+		  
 	def _normal( self, x ):
 		return x/math.sqrt((x*x.conjugate()).real)
 	
@@ -150,6 +177,6 @@ class LBframe:
 
 	def framePower( self ):
 		for i in range(len(self.frames)):
-			pos = self.frames[i][0]
-			self.fpowers[i] = self._mypower( self.z[pos:pos+len(self.acc)] )
+			pos = self.frames[i][self.startBlock]
+			self.fpowers[i] = self._mypower( self.z[pos:pos+self.frameLen] )
 	
