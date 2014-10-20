@@ -16,13 +16,13 @@ class LBfile:
 		
 if __name__ == '__main__':
 
-	aLB = LBfile('d:/works/lb/right.wav')
-	for i in range(3):
+	aLB = LBfile('e:/works/lb/dual.wav')
+	for i in range(10):
 		aLB.frame.match()
 		aLB.frame._buildAcc()
 	
    
-	f = open('d:/works/lb/rightacc.txt','wt')
+	f = open('e:/works/lb/dualacc.txt','wt')
 	strAcc = [ str(x) for x in aLB.frame.acc ]
 	for s in strAcc:
 		f.write(s)

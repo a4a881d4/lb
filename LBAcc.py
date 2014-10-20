@@ -47,14 +47,18 @@ class LBAcc:
 			self.acc[i] = self.acc[i]*k
 			k = k * delta
 	
-	def buildFreq(self):
+	def buildFreq(self,left):
+		if left==1:
+			offset = 2048.-8*16
+		else:
+			offset = 2048.
 		for i in range(1024):
 			f = []
 			self.freqs.append(f)
 		for i in range(87):
 			frame = self.conv[i*1280+128:i*1280+128+1024]
 			ff = numpy.fft.fft(frame)
-			ff = self.timing( ff, 2048.*math.pi/8192. ) #1927
+			ff = self.timing( ff, offset*math.pi/8192. ) #1927
 			for j in range(len(ff)):
 				self.freqs[j].append(ff[j])
 	
@@ -232,25 +236,38 @@ class LBAcc:
 					isP=0
 					break
 			if isP==1:
-				B.printOut()
+				#B.printOut()
 				self.primes.append(B)		
 											
 if __name__=='__main__':
+	left = 1
+	dual = 0
+	path = 'e:/works/lb/'
+	if left ==1:
+		fin = path + 'left' + 'acc.txt'
+		fout = path + 'left' + 'pilot.txt'
+	else:
+		fin = path + 'right' + 'acc.txt'
+		fout = path + 'right' + 'pilot.txt'
+	if dual==1:
+		fin = path + 'dual' + 'acc.txt'
+		fout = path + 'dual' + 'pilot.txt'
+	
 	aAcc = LBAcc()
-	aAcc.fromFile('g:/works/lb/rightacc.txt')
+	aAcc.fromFile(fin)
 	phase = aAcc.freqErr()
 	print phase
 	aAcc.removeFreq(0.-phase)
 	phase = aAcc.freqErr()
 	print phase
 	aAcc.convert()
-	aAcc.buildFreq()
+	aAcc.buildFreq(left)
 	aAcc.freqPower()
-	aAcc.getPilot(0)
+	aAcc.getPilot(left)
 	aAcc.retiming()
-	aAcc.getPilot(0)
+	aAcc.getPilot(left)
 	aAcc.decP()
-	with open('g:/works/lb/rightpilot.txt','wt') as fp:
+	with open(fout,'wt') as fp:
 		for p in aAcc.pilots:
 			print >>fp,aAcc.pilots.index(p),
 			aAcc.count(p,fp)
