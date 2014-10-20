@@ -49,9 +49,9 @@ class LBAcc:
 	
 	def buildFreq(self,left):
 		if left==1:
-			offset = 2048.-8*16
+			offset = 2048.-4*16
 		else:
-			offset = 2048.
+			offset = 2048.-4*16
 		for i in range(1024):
 			f = []
 			self.freqs.append(f)
@@ -134,7 +134,7 @@ class LBAcc:
 			s += dd.imag*dd.real
 			p += dd.real*dd.real
 		p /= 2.
-		phase = math.asin(s/p)
+		phase = math.atan(s/p)
 		return phase/2			
 	def timing( self, gf, phase ):
 		j=complex(1.,0.)
@@ -241,7 +241,7 @@ class LBAcc:
 											
 if __name__=='__main__':
 	left = 1
-	dual = 0
+	dual = 1
 	path = 'e:/works/lb/'
 	if left ==1:
 		fin = path + 'left' + 'acc.txt'
@@ -251,7 +251,10 @@ if __name__=='__main__':
 		fout = path + 'right' + 'pilot.txt'
 	if dual==1:
 		fin = path + 'dual' + 'acc.txt'
-		fout = path + 'dual' + 'pilot.txt'
+		if left ==1:
+			fout = path + 'dualleft' + 'pilot.txt'
+		else:
+			fout = path + 'dualright' + 'pilot.txt'
 	
 	aAcc = LBAcc()
 	aAcc.fromFile(fin)
@@ -263,6 +266,7 @@ if __name__=='__main__':
 	aAcc.convert()
 	aAcc.buildFreq(left)
 	aAcc.freqPower()
+	
 	aAcc.getPilot(left)
 	aAcc.retiming()
 	aAcc.getPilot(left)
