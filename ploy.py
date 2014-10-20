@@ -106,7 +106,15 @@ class ploy:
 			f = x
 		s.append(c)
 		return max(s)
-							
+	
+	def revert( self, n ):
+		a = ploy()
+		for x in self.state:
+			a.state.insert(0,x)
+		a.set( a.state )
+		a.xn( n-1-self.l )
+		return a
+								
 if __name__=='__main__':
 	A = [ 1 for i in range(13) ]
 	B = [ 1, 1]

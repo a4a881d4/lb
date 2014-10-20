@@ -3,64 +3,11 @@ import math
 from matplotlib.pylab import *
 import sys
 import ploy
+from LBBlock import *
 
-class LBAcc:
+class LBAcc(LBBlock):
 	def __init__(self):
-		self.acc = []
-		self.conv = []
-		self.freqs = []
-		self.power = 0.
-		self.freqPowers = []
-
-	def fromFile( self, fn ):
-		with open( fn,'rt') as f:
-			for s in f:
-				self.acc.append(complex(s))
-			f.close()
-	
-	def convert(self):
-		self.conv = self.acc[:200000]
-		j=1.
-		for i in range(len(self.conv)):
-			self.conv[i] = self.conv[i]*j
-			j = j*-1.
-		gf = numpy.fft.fft(self.conv)
-		cgf = gf[(200000-112500)/2:(200000+112500)/2]
-		self.conv = numpy.fft.ifft(cgf)
-		
-
-	def freqErr(self):
-		gf = numpy.fft.fft(self.acc)
-		for i in range(len(gf)):
-			a = gf[i]*gf[i].conjugate()
-			gf[i] = a
-		rg = numpy.fft.ifft(gf)
-		p = rg[1820]
-		p = math.atan2(p.imag,p.real)/1820.
-		self.power = rg[0].real
-		return p
-		
-	def removeFreq(self,phase):
-		delta = complex(math.cos(phase),math.sin(phase))    		
-		k = complex(-1.,1.)
-		for i in range(len(self.acc)):
-			self.acc[i] = self.acc[i]*k
-			k = k * delta
-	
-	def buildFreq(self,left):
-		if left==1:
-			offset = 2048.-4*16
-		else:
-			offset = 2048.-4*16
-		for i in range(1024):
-			f = []
-			self.freqs.append(f)
-		for i in range(87):
-			frame = self.conv[i*1280+128:i*1280+128+1024]
-			ff = numpy.fft.fft(frame)
-			ff = self.timing( ff, offset*math.pi/8192. ) #1927
-			for j in range(len(ff)):
-				self.freqs[j].append(ff[j])
+		LBBlock.__init__(self)
 	
 	def freqPower(self):
 		for i in range(1024):
@@ -77,6 +24,7 @@ class LBAcc:
 		plot(aY)
 		figure(2)
 		plot(aX,aY)
+	
 	def plotK(self,k):
 		aX = [ x.real for x in k ]
 		aY = [ x.imag for x in k ]
@@ -86,20 +34,6 @@ class LBAcc:
 		figure(2)
 		plot(aX,aY)
 		
-	def getPilot(self,left):
-		if left==1:
-			off = [ 13, 4, 10, 1, 7, 16 ]
-		else:
-			off = [ 4, 13, 1, 10, 16, 7 ]
-		self.blockPilots = [[] for i in range( len( self.freqs[0] ) )]
-		self.blockAngs = [[] for i in range( len( self.freqs[0] ) )]
-		
-		for i in range(len(self.freqs[0])):
-			zk = (i-2) % 6
-			for j in range( 77, 941 ):
-				if (j-off[zk]-512+18*30)%18 == 0:
-					self.blockPilots[i].append(self.freqs[j][i])
-					self.blockAngs[i].append(math.atan2(self.freqs[j][i].imag,self.freqs[j][i].real))	
 	
 	def decP(self):
 		self.pilots = []
@@ -113,37 +47,6 @@ class LBAcc:
 				pilot.append(c)
 			self.pilots.append(pilot)
 			
-	def retiming(self):
-		bTimingE = []
-		for p in self.blockPilots:
-			ph = self.estTiming(p)
-			print ph
-			bTimingE.append(-ph/18.)
-		for i in range(len(bTimingE)):
-			ff = [ self.freqs[j][i] for j in range(1024) ]
-			ff = self.timing( ff, bTimingE[i] ) #1927
-			for j in range(len(ff)):
-				self.freqs[j][i]=ff[j]
-			
-	def estTiming(self,pilot):
-		lp = pilot[:-1]
-		p = 0.
-		s = 0.
-		for i in range(1,len(pilot)):
-			dd = pilot[i]*pilot[i-1].conjugate()
-			s += dd.imag*dd.real
-			p += dd.real*dd.real
-		p /= 2.
-		phase = math.atan(s/p)
-		return phase/2			
-	def timing( self, gf, phase ):
-		j=complex(1.,0.)
-		det = complex( math.cos(phase), math.sin(phase) )
-		zgf = []
-		for i in range(len(gf)):
-			zgf.append(gf[i]*j)
-			j = j*det
-		return zgf
 	
 	def count(self,p,fp):
 		c = 1
@@ -240,21 +143,22 @@ class LBAcc:
 				self.primes.append(B)		
 											
 if __name__=='__main__':
+	import PRBS
 	left = 1
 	dual = 1
-	path = 'e:/works/lb/'
+	path = 'd:/works/lb/'
 	if left ==1:
 		fin = path + 'left' + 'acc.txt'
-		fout = path + 'left' + 'pilot.txt'
+		fout = path + 'left' + 'pilotInit.txt'
 	else:
 		fin = path + 'right' + 'acc.txt'
-		fout = path + 'right' + 'pilot.txt'
+		fout = path + 'right' + 'pilotInit.txt'
 	if dual==1:
 		fin = path + 'dual' + 'acc.txt'
 		if left ==1:
-			fout = path + 'dualleft' + 'pilot.txt'
+			fout = path + 'dualleft' + 'pilotInit.txt'
 		else:
-			fout = path + 'dualright' + 'pilot.txt'
+			fout = path + 'dualright' + 'pilotInit.txt'
 	
 	aAcc = LBAcc()
 	aAcc.fromFile(fin)
@@ -271,19 +175,33 @@ if __name__=='__main__':
 	aAcc.retiming()
 	aAcc.getPilot(left)
 	aAcc.decP()
-	with open(fout,'wt') as fp:
-		for p in aAcc.pilots:
-			print >>fp,aAcc.pilots.index(p),
-			aAcc.count(p,fp)
-		fp.close()
 	
 	aAcc.toPPs()
-	
 	aAcc.prime()
-	p = aAcc.primes[295]
 	
-	for pp in aAcc.pps:
-		D = p.mul(pp)
-		D.printOut()
+	p = aAcc.primes[295]
+	hexPI = []
+	aMseq = PRBS.PRBS()
+	with open(fout,'wt') as fp:
+		for i in range(len(aAcc.pps)):
+			pp = aAcc.pps[i]
+			D = p.mul(pp)
+			if D.state[30]==0:
+				print >>fp,i/2,
+				hp = 0
+				for j in range(11):
+					hp |= ( pp.state[j]<<j )
+				hexPI.append(hp)
+				print >>fp,hex(hp)
+		for hp in hexPI:
+			aMseq.setK(hp)
+			e = []
+			for i in range(48):
+				e.append( 1-2*aMseq.ce() )
+			print >>fp,hexPI.index(hp),
+			aAcc.count(e,fp)
+		fp.close()
+	
+	
 				
 	
