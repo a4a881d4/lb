@@ -54,7 +54,7 @@ class LBAcc:
 		for i in range(87):
 			frame = self.conv[i*1280+128:i*1280+128+1024]
 			ff = numpy.fft.fft(frame)
-			ff = self.timing( ff, 1927.*math.pi/8192. ) #1927
+			ff = self.timing( ff, 2048.*math.pi/8192. ) #1927
 			for j in range(len(ff)):
 				self.freqs[j].append(ff[j])
 	
@@ -86,7 +86,7 @@ class LBAcc:
 		if left==1:
 			off = [ 13, 4, 10, 1, 7, 16 ]
 		else:
-			off = [ 13, 4, 1, 10, 16, 7 ]
+			off = [ 4, 13, 1, 10, 16, 7 ]
 		self.blockPilots = [[] for i in range( len( self.freqs[0] ) )]
 		self.blockAngs = [[] for i in range( len( self.freqs[0] ) )]
 		
@@ -237,7 +237,7 @@ class LBAcc:
 											
 if __name__=='__main__':
 	aAcc = LBAcc()
-	aAcc.fromFile('d:/works/lb/leftacc.txt')
+	aAcc.fromFile('g:/works/lb/rightacc.txt')
 	phase = aAcc.freqErr()
 	print phase
 	aAcc.removeFreq(0.-phase)
@@ -246,11 +246,11 @@ if __name__=='__main__':
 	aAcc.convert()
 	aAcc.buildFreq()
 	aAcc.freqPower()
-	aAcc.getPilot(1)
+	aAcc.getPilot(0)
 	aAcc.retiming()
-	aAcc.getPilot(1)
+	aAcc.getPilot(0)
 	aAcc.decP()
-	with open('d:/works/lb/leftpilot.txt','wt') as fp:
+	with open('g:/works/lb/rightpilot.txt','wt') as fp:
 		for p in aAcc.pilots:
 			print >>fp,aAcc.pilots.index(p),
 			aAcc.count(p,fp)
