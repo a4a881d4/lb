@@ -32,7 +32,7 @@ class LBAcc(LBBlock):
 		plot(aX)
 		plot(aY)
 		figure(2)
-		plot(aX,aY)
+		plot(aX,aY,'.')
 		
 	
 	def decP(self):

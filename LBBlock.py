@@ -115,13 +115,16 @@ class LBBlock:
 			off = [ 4, 13, 1, 10, 16, 7 ]
 		self.blockPilots = [[] for i in range( len( self.freqs[0] ) )]
 		self.blockAngs = [[] for i in range( len( self.freqs[0] ) )]
+		self.v = [[] for i in range( len( self.freqs[0] ) )]
 		
 		for i in range(len(self.freqs[0])):
 			zk = (i-2) % 6
 			for j in range( 77, 941 ):
 				if (j-off[zk]-512+18*30)%18 == 0:
 					self.blockPilots[i].append(self.freqs[j][i])
-					self.blockAngs[i].append(math.atan2(self.freqs[j][i].imag,self.freqs[j][i].real))	
+					self.blockAngs[i].append(math.atan2(self.freqs[j][i].imag,self.freqs[j][i].real))
+				elif (j-off[zk]-512+18*30)%9 != 0:
+					self.v[i].append( self.freqs[j][i] )	
 
 	def removePilot( self, left ):
 		if left==1:
@@ -146,13 +149,9 @@ class LBBlock:
 				self.freqs[j][i]=ff[j]
 			
 	def estTiming(self,pilot):
-		p = 0.
-		s = 0.
-		for i in range(1,len(pilot)):
-			dd = pilot[i]*pilot[i-1].conjugate()
-			s = dd.imag
-			p = dd.real
-		phase = math.atan(s/p)
+		dd = [ pilot[i]*pilot[i-1].conjugate() for i in range(1,len(pilot)) ]
+		s = sum( dd )
+		phase = math.atan(s.imag/s.real)
 		return phase			
 	
 	def timing( self, gf, phase ):
@@ -163,10 +162,29 @@ class LBBlock:
 			zgf.append(gf[i]*j)
 			j = j*det
 		return zgf
+		
+	def estRot( self, pilot ):
+		dd = sum( pilot )
+		rot = dd / math.sqrt( (dd*dd.conjugate()).real )
+		return dd.conjugate()
+		
+	def removeRot( self, gf, a ):
+		return [ x*a for x in gf ]
+		
+	def rot( self ):
+		self.v = []
+		for i in range(len(self.blockPilots)):
+			a = self.estRot( self.blockPilots[i] )
+			ff = [ self.freqs[j][i] for j in range(1024) ]
+			for j in range(len(ff)):
+				self.freqs[j][i]=ff[j]*a
+			#self.v.append( [ ff[j]*a for j in range(1024) ] )
+			
+	
 
 if __name__=='__main__':
 	path = 'd:/works/lb/'
-	fin = path + 'leftBlk1.txt'
+	fin = path + 'dualBlk2.txt'
 	aBlk = LBBlock()
 	aBlk.fromFile(fin)
 	aBlk.buildFreq(1)
@@ -175,4 +193,10 @@ if __name__=='__main__':
 	aBlk.retiming()
 	aBlk.getPilot(1)
 	aBlk.removePilot(1)
-	
+	aBlk.rot()
+	aBlk.retiming()
+	aBlk.getPilot(1)
+	aBlk.removePilot(1)
+	import LBAcc
+	aAcc = LBAcc.LBAcc()
+		
