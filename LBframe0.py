@@ -5,7 +5,7 @@ import math
 
 class LBframe0(LBframe):
 	def __init__(self,inF,length):
-		LBframe.__init__(self,inF,length,1,0)
+		LBframe.__init__(self,inF,length,94,0)
 		self.xc = [[0. for f in self.frames] for g in self.frames]
 			
 	def xcorr( self ):
@@ -16,7 +16,7 @@ class LBframe0(LBframe):
 			Apower = self._mypower(A)
 			for i in range( line+1, len(self.frames) ):
 				pos = self.frames[i][self.startBlock]
-				posO, peak, a = self.findMatch(A,pos)
+				posO, peak, a, dat = self.findMatch(A,pos)
 				peak = math.sqrt(peak/(Apower*self.fpowers[i]))
 				print i," ",pos,"match:",posO," ",peak," ",a
 				self.xc[line][i] = peak*256.

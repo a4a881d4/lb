@@ -16,7 +16,14 @@ class LBBlock:
 			191,656,153,191,631,746,1516,1687,1648,1516,975,1340,238,213,1421,238,
 			632,1254,427,449,476,427,1866,1688,656,1588,191,656,746,1104,1687,306,
 			1516,1687,1340,627,213,1248,238 ]
-
+			
+		self.rightPilotInit = [
+			1685,1688,1860,1866,382,656,1492,1104,1263,746,984,1687,632,627,1951,1340,
+			476,213,1866,844,930,933,191,328,746,1576,631,1397,1516,1867,1340,1337,
+			1492,1104,1326,306,1254,1263,632,627,427,1248,1688,1951,1866,844,656,794,
+			1104,930,746,1576,1687,153,627,631,1340,1337,213,1648,844,975,933,422,
+			449,984,1854,632,1688,1951,1588,476,1860,1866,1104,930,306,191,1263,746,
+			627,631,1248,1516,1951,1340,844 ]
 
 	def fromFile( self, fn ):
 		with open( fn,'rt') as f:
@@ -88,15 +95,15 @@ class LBBlock:
 		self.sPos = [ 0 ]
 		for i in range(1,87):
 			ss = self.sPos[i-1]+1280
-			pos = self.findMatch(ss)
-			print pos," match ",ss
-			self.sPos.append(pos)
+			#pos = self.findMatch(ss)
+			#print pos," match ",ss
+			self.sPos.append(ss)
 	
 	def buildFreq(self,left):
 		if left==1:
-			offset = 2048 #2048.-4*16
+			offset = 2048. #2048.-4*16
 		else:
-			offset = 2048.-4*16
+			offset = 2048. #-4*16
 		for i in range(1024):
 			f = []
 			self.freqs.append(f)
@@ -129,6 +136,8 @@ class LBBlock:
 	def removePilot( self, left ):
 		if left==1:
 			init = self.leftPilotInit
+		else:
+			init = self.rightPilotInit
 		aMseq = PRBS.PRBS()
 		for i in range(len(self.blockPilots)):
 			aMseq.setK(init[i])
@@ -180,23 +189,45 @@ class LBBlock:
 				self.freqs[j][i]=ff[j]*a
 			#self.v.append( [ ff[j]*a for j in range(1024) ] )
 			
-	
+	def rots( self, seq, ang ):
+		ang *= math.pi/180.
+		a = math.tan(ang)
+		r = [ complex(x.real+a*x.imag,x.imag) for x in seq ]
+		return r
+		
+	def _judge( self, seq ):
+		r = []
+		for x in seq:
+			if x>0.:
+				r.append(1)
+			else:
+				r.append(-1)
+		return r
+		
+	def cjudge( self, seq ):
+		si = [ x.real for x in seq ]
+		sq = [ x.imag for x in seq ]
+		return self._judge(si), self._judge(sq)
+		
+		
+					
 
 if __name__=='__main__':
+	left = 1
 	path = 'd:/works/lb/'
 	fin = path + 'dualBlk2.txt'
 	aBlk = LBBlock()
 	aBlk.fromFile(fin)
-	aBlk.buildFreq(1)
-	aBlk.getPilot(1)
-	aBlk.removePilot(1)
+	aBlk.buildFreq(left)
+	aBlk.getPilot(left)
+	aBlk.removePilot(left)
 	aBlk.retiming()
-	aBlk.getPilot(1)
-	aBlk.removePilot(1)
+	aBlk.getPilot(left)
+	aBlk.removePilot(left)
 	aBlk.rot()
 	aBlk.retiming()
-	aBlk.getPilot(1)
-	aBlk.removePilot(1)
+	aBlk.getPilot(left)
+	aBlk.removePilot(left)
 	import LBAcc
 	aAcc = LBAcc.LBAcc()
 		

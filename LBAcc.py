@@ -144,7 +144,7 @@ class LBAcc(LBBlock):
 											
 if __name__=='__main__':
 	import PRBS
-	left = 1
+	left = 0
 	dual = 1
 	path = 'd:/works/lb/'
 	if left ==1:
