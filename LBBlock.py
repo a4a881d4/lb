@@ -132,7 +132,50 @@ class LBBlock:
 					self.blockAngs[i].append(math.atan2(self.freqs[j][i].imag,self.freqs[j][i].real))
 				elif (j-off[zk]-512+18*30)%9 != 0:
 					self.v[i].append( self.freqs[j][i] )	
-
+	
+	def getDual(self):
+		self.offLeft = [ 13, 4, 10, 1, 7, 16 ]
+		self.offRight = [ 4, 13, 1, 10, 16, 7 ]
+		self.leftPilots = [[] for i in range( len( self.freqs[0] ) )]
+		self.rightPilots = [[] for i in range( len( self.freqs[0] ) )]
+		self.v = [[] for i in range( len( self.freqs[0] ) )]
+		leftMseq = PRBS.PRBS()
+		rightMseq = PRBS.PRBS()
+		for i in range(len(self.freqs[0])):
+			zk = (i-2) % 6
+			leftMseq.setK(self.leftPilotInit[i])
+			rightMseq.setK(self.rightPilotInit[i])
+			for j in range( 77, 941 ):
+				if (j-self.offLeft[zk]-512+18*30)%18 == 0:
+					r = 1 - 2*leftMseq.ce()
+					self.leftPilots[i].append(self.freqs[j][i]*r)
+				elif (j-self.offRight[zk]-512+18*30)%18 == 0:
+					r = 1 - 2*rightMseq.ce()
+					self.rightPilots[i].append(self.freqs[j][i]*r)
+				else:	
+					self.v[i].append( self.freqs[j][i] )	
+		self.estDual()
+		
+	def estDual(self):
+		size = len( self.leftPilots )
+		self.leftChannel = []
+		self.rightChannel = []
+		for i in range(len(self.leftPilots)):
+			self.leftChannel.append(sum( self.leftPilots[i] )/size)
+			self.rightChannel.append(sum( self.rightPilots[i] )/size)
+		
+	def STBCCombine(self,k):
+		r = []
+		for i in range(len(self.v[k])):
+			y1 = self.v[k][i]
+			y2 = self.v[k+1][i]
+			y2 = y2.conjugate()
+			u1 = y1*self.leftChannel[k].conjugate() + y2 * self.rightChannel[k]
+			u2 = y1*self.rightChannel[k] - y2 * self.leftChannel[k].conjugate()
+			r.append(u1)
+			r.append(u2)
+		return r
+			
 	def removePilot( self, left ):
 		if left==1:
 			init = self.leftPilotInit
@@ -214,8 +257,8 @@ class LBBlock:
 
 if __name__=='__main__':
 	left = 1
-	path = 'd:/works/lb/'
-	fin = path + 'dualBlk2.txt'
+	path = 'g:/works/lb/'
+	fin = path + 'dualBlk3.txt'
 	aBlk = LBBlock()
 	aBlk.fromFile(fin)
 	aBlk.buildFreq(left)
@@ -228,6 +271,8 @@ if __name__=='__main__':
 	aBlk.retiming()
 	aBlk.getPilot(left)
 	aBlk.removePilot(left)
+	aBlk.getDual()
+	
 	import LBAcc
 	aAcc = LBAcc.LBAcc()
 		
