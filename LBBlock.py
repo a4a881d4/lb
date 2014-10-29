@@ -139,6 +139,7 @@ class LBBlock:
 		self.leftPilots = [[] for i in range( len( self.freqs[0] ) )]
 		self.rightPilots = [[] for i in range( len( self.freqs[0] ) )]
 		self.v = [[] for i in range( len( self.freqs[0] ) )]
+		self.u = [[] for i in range( len( self.freqs[0] ) )]
 		leftMseq = PRBS.PRBS()
 		rightMseq = PRBS.PRBS()
 		for i in range(len(self.freqs[0])):
@@ -147,17 +148,18 @@ class LBBlock:
 			rightMseq.setK(self.rightPilotInit[i])
 			for j in range( 77, 941 ):
 				if (j-self.offLeft[zk]-512+18*30)%18 == 0:
-					r = 1 - 2*leftMseq.ce()
+					r = (1 - 2*leftMseq.ce())*complex(1,0)
 					self.leftPilots[i].append(self.freqs[j][i]*r)
 				elif (j-self.offRight[zk]-512+18*30)%18 == 0:
-					r = 1 - 2*rightMseq.ce()
+					r = (1 - 2*rightMseq.ce())*complex(1,0)
 					self.rightPilots[i].append(self.freqs[j][i]*r)
 				else:	
-					self.v[i].append( self.freqs[j][i] )	
+					self.v[i].append( self.freqs[j][i] )
+				self.u[i].append(self.freqs[j][i])	
 		self.estDual()
 		
 	def estDual(self):
-		size = len( self.leftPilots )
+		size = len( self.leftPilots[0] )
 		self.leftChannel = []
 		self.rightChannel = []
 		for i in range(len(self.leftPilots)):
@@ -170,10 +172,11 @@ class LBBlock:
 			y1 = self.v[k][i]
 			y2 = self.v[k+1][i]
 			y2 = y2.conjugate()
-			u1 = y1*self.leftChannel[k].conjugate() + y2 * self.rightChannel[k]
-			u2 = y1*self.rightChannel[k] - y2 * self.leftChannel[k].conjugate()
-			r.append(u1)
-			r.append(u2)
+			u1 = y1*self.rightChannel[k].conjugate() + y2 * self.leftChannel[k]
+			u2 = -y1*self.leftChannel[k].conjugate() + y2 * self.rightChannel[k]
+			s = self.rightChannel[k]*self.rightChannel[k].conjugate() + self.leftChannel[k]*self.leftChannel[k].conjugate()
+			r.append(u1/s)
+			r.append(u2.conjugate()/s)
 		return r
 			
 	def removePilot( self, left ):
@@ -186,7 +189,9 @@ class LBBlock:
 			aMseq.setK(init[i])
 			for j in range(len(self.blockPilots[i])):
 				if aMseq.ce()==1:
-					self.blockPilots[i][j] *= -1.
+					self.blockPilots[i][j] *= complex(-1.,0.)
+				else:
+					self.blockPilots[i][j] *= complex(1.,0.)
 					
 	def retiming(self):
 		bTimingE = []
@@ -275,4 +280,31 @@ if __name__=='__main__':
 	
 	import LBAcc
 	aAcc = LBAcc.LBAcc()
-		
+	
+	v0 = aBlk.rots(aBlk.v[0],47)
+	l0,r0 = aBlk.cjudge(v0)
+	
+	v1 = aBlk.rots(aBlk.v[1],47)
+	l1,r1 = aBlk.cjudge(v1)
+	
+	lr = [ (l0[i],r0[i],l1[i],r1[i]) for i in range(len(l0)) ]
+	
+	m = aBlk.STBCCombine(0)
+	rr = {}
+	for i in range(len(m)):
+		k = i/2
+		if m[i].imag<0.2 and m[i].imag>-0.2:
+			print i,
+			print aBlk.v[0][k],aBlk.v[1][k],(l0[k],r0[k],l1[k],r1[k])
+			if lr[k] in rr:
+				rr[lr[k]] += 1
+			else:
+				rr[lr[k]] = 1
+		else:
+			print "error ",i,
+			print aBlk.v[0][k],aBlk.v[1][k],(l0[k],r0[k],l1[k],r1[k]),m[i]
+			if lr[k] in rr:
+				rr[lr[k]] -= 1
+			else:
+				rr[lr[k]] = -1
+				
