@@ -15,7 +15,7 @@ class LBBlock:
 			306,382,1263,1492,984,1326,1248,984,1951,632,476,427,794,476,930,1866,
 			191,656,153,191,631,746,1516,1687,1648,1516,975,1340,238,213,1421,238,
 			632,1254,427,449,476,427,1866,1688,656,1588,191,656,746,1104,1687,306,
-			1516,1687,1340,627,213,1248,238 ]
+			1516,1687,1340,627,213,1248,238, 238,238,238,238,238,238,238 ]
 			
 		self.rightPilotInit = [
 			1685,1688,1860,1866,382,656,1492,1104,1263,746,984,1687,632,627,1951,1340,
@@ -23,7 +23,7 @@ class LBBlock:
 			1492,1104,1326,306,1254,1263,632,627,427,1248,1688,1951,1866,844,656,794,
 			1104,930,746,1576,1687,153,627,631,1340,1337,213,1648,844,975,933,422,
 			449,984,1854,632,1688,1951,1588,476,1860,1866,1104,930,306,191,1263,746,
-			627,631,1248,1516,1951,1340,844 ]
+			627,631,1248,1516,1951,1340,844, 238,238,238,238,238,238,238 ]
 		self.offLeft = [ 13, 4, 10, 1, 7, 16 ]
 		self.offRight = [ 4, 13, 1, 10, 16, 7 ]
 	def fromFile( self, fn ):
@@ -40,13 +40,16 @@ class LBBlock:
 		self.rebuildStart()
 		
 	def convert(self):
-		self.conv = self.acc[:200000]
+		self.conv = self.acc[0:]
 		j=1.
 		for i in range(len(self.conv)):
 			self.conv[i] = self.conv[i]*j
 			j = j*-1.
+		lengthin = len(self.conv)
+		lengthout = int(lengthin*45./20.+0.5)
 		gf = numpy.fft.fft(self.conv)
-		cgf = gf[(200000-112500)/2:(200000+112500)/2]
+		cgf = [ complex(0,0) for i in range(lengthout) ]
+		cgf[(lengthout-lengthin)/2:(lengthout-lengthin)/2+lengthin] = gf
 		self.conv = numpy.fft.ifft(cgf)
 
 	def freqErr(self):
@@ -94,8 +97,8 @@ class LBBlock:
 		
 	def rebuildStart( self ):
 		self.sPos = [ 0 ]
-		for i in range(1,87):
-			ss = self.sPos[i-1]+1280
+		for i in range(1,94):
+			ss = self.sPos[i-1]+4096+1024
 			#pos = self.findMatch(ss)
 			#print pos," match ",ss
 			self.sPos.append(ss)
@@ -105,20 +108,20 @@ class LBBlock:
 			offset = 2048. #-4*16
 		else:
 			offset = 2048. #-4*16
-		for i in range(1024):
+		for i in range(4096):
 			f = []
 			self.freqs.append(f)
 		k0 = complex(1,0)
-		for i in range(87):
+		for i in range(94):
 			start = self.sPos[i]
-			frame = self.conv[start+128:start+128+1024]
+			frame = self.conv[start+512:start+512+4096]
 			ff = numpy.fft.fft(frame)
 			ff = self.timing( ff, offset*math.pi/8192. ) #1927
 			for j in range(len(ff)):
 				self.freqs[j].append(ff[j]*k0)
-			k0 = k0*complex(0,-1)
+			#k0 = k0*complex(0,-1)
 			
-	
+	"""
 	def getPilot(self,left):
 		if left==1:
 			off = self.offLeft
@@ -136,16 +139,16 @@ class LBBlock:
 					self.blockAngs[i].append(math.atan2(self.freqs[j][i].imag,self.freqs[j][i].real))
 				elif (j-off[zk]-512+18*30)%9 != 0:
 					self.v[i].append( self.freqs[j][i] )	
-
+        """
 	def retiming2(self,p,k):
 		ph = self.estTiming(p)
 		print ph
 		ph = -ph/9.
-		ff = [ self.freqs[j][k] for j in range(1024) ]
+		ff = [ self.freqs[j][k] for j in range(4096) ]
 		ff = self.timing( ff, ph ) 
 		for j in range(len(ff)):
 			self.freqs[j][k]=ff[j]
-		ff = [ self.freqs[j][k+1] for j in range(1024) ]
+		ff = [ self.freqs[j][k+1] for j in range(4096) ]
 		ff = self.timing( ff, ph ) 
 		for j in range(len(ff)):
 			self.freqs[j][k+1]=ff[j]
@@ -158,7 +161,7 @@ class LBBlock:
 		pilot2 = [[] for i in range( len( self.freqs[0] )/2 )]
 		Mseq0 = PRBS.PRBS()
 		Mseq1 = PRBS.PRBS()
-		for i in range(0,len(self.freqs[0])-1,2):
+		for i in range(0,len(self.freqs[0]),2):
 			if left ==1:
 				Mseq0.setK(self.leftPilotInit[i])
 				Mseq1.setK(self.leftPilotInit[i+1])
@@ -167,11 +170,11 @@ class LBBlock:
 				Mseq1.setK(self.rightPilotInit[i+1])
 			zk = (i-2) % 6
 			
-			for j in range( 77, 941 ):
-				if (j-off[zk]-512+18*30)%18 == 0:
+			for j in range( 77+1536, 941+1536 ):
+				if (j-off[zk]-2048+18*30)%18 == 0:
 					r = (1 - 2*Mseq0.ce())
 					pilot2[i/2].append(self.freqs[j][i]*r)
-				elif (j-off[zk]-512+18*30)%18 == 9:
+				elif (j-off[zk]-2048+18*30)%18 == 9:
 					r = (1 - 2*Mseq1.ce())
 					pilot2[i/2].append( self.freqs[j][i+1]*r )
 				
@@ -185,8 +188,8 @@ class LBBlock:
 		self.u = [[] for i in range( len( self.freqs[0] ) )]
 		for i in range(len(self.freqs[0])):
 			zk = (i-2) % 6
-			for j in range( 77, 941 ):
-				if (j-self.offLeft[zk]-512+18*30)%9 != 0:
+			for j in range( 77+1536, 941+1536 ):
+				if (j-self.offLeft[zk]-2048+18*30)%9 != 0:
 					self.v[i].append( self.freqs[j][i] )
 				self.u[i].append(self.freqs[j][i])	
 		self.estDual()
@@ -237,7 +240,7 @@ class LBBlock:
 			print ph
 			bTimingE.append(-ph/18.)
 		for i in range(len(bTimingE)):
-			ff = [ self.freqs[j][i] for j in range(1024) ]
+			ff = [ self.freqs[j][i] for j in range(4096) ]
 			ff = self.timing( ff, bTimingE[i] ) #1927
 			for j in range(len(ff)):
 				self.freqs[j][i]=ff[j]
@@ -269,7 +272,7 @@ class LBBlock:
 		self.v = []
 		for i in range(len(self.blockPilots)):
 			a = self.estRot( self.blockPilots[i] )
-			ff = [ self.freqs[j][i] for j in range(1024) ]
+			ff = [ self.freqs[j][i] for j in range(4096) ]
 			for j in range(len(ff)):
 				self.freqs[j][i]=ff[j]*a
 			#self.v.append( [ ff[j]*a for j in range(1024) ] )
@@ -310,9 +313,10 @@ if __name__=='__main__':
 	aBlk.retiming()
 	"""
 	p = aBlk.get2Pilot(left)
+	"""
 	for i in range(len(p)):
 	   aBlk.retiming2(p[i],2*i)
-	
+	"""
 	"""
 	aBlk.removePilot(left)
 	aBlk.rot()
