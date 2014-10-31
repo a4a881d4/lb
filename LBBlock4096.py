@@ -65,7 +65,7 @@ class LBBlock:
 		return p
 	
 	def removeFreq(self,phase):
-		delta = complex(math.cos(phase),math.sin(phase))    		
+		delta = complex(math.cos(phase),math.sin(phase))
 		k = complex(-1.,1.)
 		for i in range(len(self.acc)):
 			self.acc[i] = self.acc[i]*k
@@ -141,7 +141,7 @@ class LBBlock:
 					self.blockAngs[i].append(math.atan2(self.freqs[j][i].imag,self.freqs[j][i].real))
 				elif (j-off[zk]-512+18*30)%9 != 0:
 					self.v[i].append( self.freqs[j][i] )	
-        """
+	"""
 	def retiming2(self,p,k):
 		ph = self.estTiming(p)
 		print ph
@@ -306,7 +306,7 @@ class LBBlock:
 
 if __name__=='__main__':
 	left = 1
-	path = 'd:/works/lb/'
+	path = 'g:/works/lb/'
 	fin = path + 'dualBlk3.txt'
 	aBlk = LBBlock()
 	aBlk.fromFile(fin)
@@ -319,7 +319,7 @@ if __name__=='__main__':
 	p = aBlk.get2Pilot(left)
 	
 	for i in range(len(p)):
-	   aBlk.retiming2(p[i],2*i)
+		aBlk.retiming2(p[i],2*i)
 	
 	"""
 	aBlk.removePilot(left)
@@ -361,3 +361,15 @@ if __name__=='__main__':
 			else:
 				rr[lr[k]] = -1
 	"""
+	
+	buf = aBlk.acc
+	gf = []
+	for i in range(94):
+		gf.append(numpy.fft.fft(buf[i*(1820+455):(i+1)*(1820+455)]))
+	for i in range(0,94,2):
+		
+	gf = numpy.fft.fft(aBlk.acc[:200000])
+	gf = [ x*x.conjugate() for x in gf ]
+	cgf = numpy.fft.ifft(gf)
+	aAcc.plotK(cgf)
+	
