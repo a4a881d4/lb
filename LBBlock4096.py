@@ -46,7 +46,8 @@ class LBBlock:
 			self.conv[i] = self.conv[i]*j
 			j = j*-1.
 		lengthin = len(self.conv)
-		lengthout = int(lengthin*45./20.+0.5)
+		lengthout = int(lengthin*45./20.+0.5)+4
+		print lengthin,lengthout
 		gf = numpy.fft.fft(self.conv)
 		cgf = [ complex(0,0) for i in range(lengthout) ]
 		cgf[(lengthout-lengthin)/2:(lengthout-lengthin)/2+lengthin] = gf
@@ -79,11 +80,11 @@ class LBBlock:
 	def xcorrShift( self, posRange, len ):
 		ret = []
 		for pos in posRange:
-			ret.append( self._xcorrAB( self.conv[pos:pos+len], self.conv[pos+1024:pos+1024+len] ))
+			ret.append( self._xcorrAB( self.conv[pos:pos+len], self.conv[pos+4096:pos+4096+len] ))
 		return ret
 		
 	def xcorrShiftZ11( self, pos ):
-		return self.xcorrShift( [ x for x in range(pos-5,pos+6) ], 256 )
+		return self.xcorrShift( [ x for x in range(pos-40,pos+41) ], 1024 )
 	
 	def findMatch( self, pos ):
 		aX = self.xcorrShiftZ11( pos )
@@ -92,15 +93,16 @@ class LBBlock:
 			x.append((a*a.conjugate()).real)
 		peak = max(x)
 		posMax = x.index(peak)
-		pos = pos-5+posMax
+		pos = pos-40+posMax
 		return pos
 		
 	def rebuildStart( self ):
-		self.sPos = [ 0 ]
+		self.sPos = [ -23 ]
 		for i in range(1,94):
 			ss = self.sPos[i-1]+4096+1024
-			#pos = self.findMatch(ss)
-			#print pos," match ",ss
+			#if i<93:
+			# pos = self.findMatch(ss)
+			#print pos," match ",ss,pos-ss
 			self.sPos.append(ss)
 	
 	def buildFreq(self,left):
@@ -156,8 +158,10 @@ class LBBlock:
 	def get2Pilot(self,left):
 		if left==1:
 			off = self.offLeft
+			k = complex(1,-1)
 		else:
 			off = self.offRight
+			k = complex(1,1)
 		pilot2 = [[] for i in range( len( self.freqs[0] )/2 )]
 		Mseq0 = PRBS.PRBS()
 		Mseq1 = PRBS.PRBS()
@@ -172,10 +176,10 @@ class LBBlock:
 			
 			for j in range( 77+1536, 941+1536 ):
 				if (j-off[zk]-2048+18*30)%18 == 0:
-					r = (1 - 2*Mseq0.ce())
+					r = (1 - 2*Mseq0.ce())*k
 					pilot2[i/2].append(self.freqs[j][i]*r)
 				elif (j-off[zk]-2048+18*30)%18 == 9:
-					r = (1 - 2*Mseq1.ce())
+					r = (1 - 2*Mseq1.ce())*k*complex(0,1)
 					pilot2[i/2].append( self.freqs[j][i+1]*r )
 				
 		return pilot2
@@ -302,8 +306,8 @@ class LBBlock:
 
 if __name__=='__main__':
 	left = 1
-	path = 'e:/works/lb/'
-	fin = path + 'leftBlk2.txt'
+	path = 'd:/works/lb/'
+	fin = path + 'dualBlk3.txt'
 	aBlk = LBBlock()
 	aBlk.fromFile(fin)
 	aBlk.buildFreq(left)
@@ -313,10 +317,10 @@ if __name__=='__main__':
 	aBlk.retiming()
 	"""
 	p = aBlk.get2Pilot(left)
-	"""
+	
 	for i in range(len(p)):
 	   aBlk.retiming2(p[i],2*i)
-	"""
+	
 	"""
 	aBlk.removePilot(left)
 	aBlk.rot()
